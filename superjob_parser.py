@@ -8,6 +8,9 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 env = Env()
 env.read_env()
 
+MOSCOW_AREA_SJ_CODE = 4
+SJ_CATALOGUE_ID = 48
+
 
 def predict_rub_salary_sj(vacancy):
     if vacancy['currency'] != 'rub':
@@ -23,14 +26,14 @@ def get_salary_by_lang_sj():
     headers = {
         'X-Api-App-Id': env('SUPERJOB_SECRET_KEY')}
     sj_itter_key = 'objects'
-    break_condition_sj = lambda page_data, page: not page_data['more']
+    break_condition_sj = lambda page_json, page: not page_json['more']
 
     langs = ['JavaScript', 'Java', 'Python', 'Ruby', 'PHP', 'C++', 'C#', '1C', 'Swift']
 
     salaries = defaultdict(dict)
 
     for lang in langs:
-        params = {'keyword': f'Программист {lang}', 'catalogues': 48, 'town': 4}
+        params = {'keyword': f'Программист {lang}', 'catalogues': SJ_CATALOGUE_ID, 'town': MOSCOW_AREA_SJ_CODE}
 
         response = requests.get(sj_api_url, headers=headers, params=params, verify=False)
         response.raise_for_status()
@@ -42,8 +45,9 @@ def get_salary_by_lang_sj():
         vacancies = fetch_vacancies(sj_api_url, headers, params, sj_itter_key, break_condition_sj)
 
         for vacancy in vacancies:
-            if predict_rub_salary_sj(vacancy):
-                total += predict_rub_salary_sj(vacancy)
+            predicted_salary = predict_rub_salary_sj(vacancy)
+            if predicted_salary:
+                total += predicted_salary
                 vacancies_processed += 1
 
         salaries[lang]['vacancies_processed'] = vacancies_processed

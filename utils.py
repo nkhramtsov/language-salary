@@ -15,9 +15,9 @@ def fetch_vacancies(url, headers, params, itter_key, break_condition):
         params.update({'page': page})
         page_response = requests.get(url, headers=headers, params=params)
         page_response.raise_for_status()
-        page_data = page_response.json()
+        page_json = page_response.json()
 
-        yield from page_data[itter_key]
+        yield from page_json[itter_key]
 
-        if break_condition(page_data, page):
+        if break_condition(page_json, page):
             break

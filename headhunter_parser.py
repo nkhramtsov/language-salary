@@ -2,6 +2,11 @@ import requests
 from collections import defaultdict
 from utils import fetch_vacancies, predict_salary
 
+MOSCOW_AREA_HH_CODE = 1
+PERIOD_DAYS = 30
+HH_MAX_PAGE = 99
+MIN_REQUIRED_VACANCIES_FOR_LANGUAGE = 100
+
 
 def predict_rub_salary_hh(vacancy):
     salary = vacancy['salary']
@@ -17,28 +22,30 @@ def get_salary_by_lang_hh():
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
                       '(KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'}
     hh_itter_key = 'items'
-    break_condition_hh = lambda page_data, page: page >= page_data['pages'] or page > 98
+    break_condition_hh = lambda page_json, page: page >= page_json['pages'] or page >= HH_MAX_PAGE
 
     langs = ['JavaScript', 'Java', 'Python', 'Ruby', 'PHP', 'C++', 'C#', '1C', 'Swift']
 
     salaries = defaultdict(dict)
 
     for lang in langs:
-        params = {'text': f'Программист {lang}', 'area': 1, 'period': 30}
+        params = {'text': f'Программист {lang}', 'area': MOSCOW_AREA_HH_CODE, 'period': PERIOD_DAYS}
 
         response = requests.get(hh_api_url, headers=headers, params=params)
         response.raise_for_status()
 
-        if response.json()['found'] > 100:
-            salaries[lang]['vacancies_found'] = response.json()['found']
+        response_dict = response.json()
+        if response_dict['found'] > MIN_REQUIRED_VACANCIES_FOR_LANGUAGE:
+            salaries[lang]['vacancies_found'] = response_dict['found']
 
         total = 0
         vacancies_processed = 0
         vacancies = fetch_vacancies(hh_api_url, headers, params, hh_itter_key, break_condition_hh)
 
         for vacancy in vacancies:
-            if predict_rub_salary_hh(vacancy):
-                total += predict_rub_salary_hh(vacancy)
+            predicted_salary = predict_rub_salary_hh(vacancy)
+            if predicted_salary:
+                total += predicted_salary
                 vacancies_processed += 1
 
         salaries[lang]['vacancies_processed'] = vacancies_processed
