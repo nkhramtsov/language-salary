@@ -49,7 +49,10 @@ def get_salary_by_lang_hh():
                 vacancies_processed += 1
 
         salaries[lang]['vacancies_processed'] = vacancies_processed
-        salaries[lang]['average_salary'] = int(total / vacancies_processed)
+        try:
+            salaries[lang]['average_salary'] = int(total / vacancies_processed)
+        except ZeroDivisionError:
+            pass
 
     return salaries
 
